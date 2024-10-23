@@ -213,6 +213,10 @@ struct bt_conn {
 	enum bt_conn_type	type;
 	uint8_t			role;
 
+#if defined(CONFIG_BT_HCI_ACL_PER_CONN_TX_PACKETS)
+	struct k_sem acl_pkts;
+#endif /* CONFIG_BT_HCI_ACL_PER_CONN_TX_PACKETS */
+
 	ATOMIC_DEFINE(flags, BT_CONN_NUM_FLAGS);
 
 	/* Which local identity address this connection uses */

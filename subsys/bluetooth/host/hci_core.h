@@ -281,7 +281,11 @@ struct bt_dev_le {
 	uint16_t		mtu;
 	struct k_sem		pkts;
 	uint16_t		acl_mtu;
+#if defined(CONFIG_BT_HCI_ACL_PER_CONN_TX_PACKETS)
+	uint16_t			acl_pkts_per_link;
+#else
 	struct k_sem		acl_pkts;
+#endif /* CONFIG_BT_HCI_ACL_PER_CONN_TX_PACKETS */
 #endif /* CONFIG_BT_CONN */
 #if defined(CONFIG_BT_ISO)
 	uint16_t		iso_mtu;

@@ -217,7 +217,11 @@ struct k_sem *bt_conn_get_pkts(struct bt_conn *conn)
 
 #if defined(CONFIG_BT_CONN)
 	if (bt_dev.le.acl_mtu) {
+#if defined(CONFIG_BT_HCI_ACL_PER_CONN_TX_PACKETS)
+		return &conn->acl_pkts;
+#else
 		return &bt_dev.le.acl_pkts;
+#endif /* CONFIG_BT_HCI_ACL_PER_CONN_TX_PACKETS */
 	}
 #endif /* CONFIG_BT_CONN */
 
