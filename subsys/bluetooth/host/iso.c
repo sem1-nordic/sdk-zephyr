@@ -827,6 +827,9 @@ int conn_iso_send(struct bt_conn *conn, struct net_buf *buf, enum bt_iso_timesta
 	/* only one ISO channel per conn-object */
 	bt_conn_data_ready(conn);
 
+	/* Kick the TX processor */
+	bt_tx_irq_raise();
+
 	return 0;
 }
 

@@ -687,6 +687,9 @@ static void raise_data_ready(struct bt_l2cap_le_chan *le_chan)
 	}
 
 	bt_conn_data_ready(le_chan->chan.conn);
+
+	/* Kick the TX processor */
+	bt_tx_irq_raise();
 }
 
 static void lower_data_ready(struct bt_l2cap_le_chan *le_chan)
