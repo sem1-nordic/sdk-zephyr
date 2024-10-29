@@ -129,6 +129,15 @@ config BT_HCI_ACL_FLOW_CONTROL
 	  controller are on separate cores since it ensures that we do
 	  not run out of incoming ACL buffers.
 
+config BT_HCI_ACL_PER_CONN_TX_PACKETS
+	bool "Controller uses per-connection ACL TX packets"
+	help
+	  Enable support for using a controller which uses per connection ACL
+	  TX packets. This means that the host will monitor number of completed
+	  packets per connection rather than total. The host will assume the
+	  Total_Num_LE_ACL_Data_Packets reported by LE Read Buffer Size command
+	  is per connection.
+
 config BT_REMOTE_VERSION
 	bool "Allow fetching of remote version"
 	# Enable if building a Controller-only build

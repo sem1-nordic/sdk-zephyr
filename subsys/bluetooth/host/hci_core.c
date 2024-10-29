@@ -1381,6 +1381,13 @@ void bt_hci_le_enh_conn_complete(struct bt_hci_evt_le_enh_conn_complete *evt)
 	conn->le.phy.tx_phy = BT_GAP_LE_PHY_1M;
 	conn->le.phy.rx_phy = BT_GAP_LE_PHY_1M;
 #endif
+
+#if defined(CONFIG_BT_HCI_ACL_PER_CONN_TX_PACKETS)
+	conn->in_ll_max = bt_dev.le.acl_pkts_per_link;
+#else
+	conn->in_ll_max = 3;
+#endif /* CONFIG_BT_HCI_ACL_PER_CONN_TX_PACKETS */
+
 	/*
 	 * Use connection address (instead of identity address) as initiator
 	 * or responder address. Only peripheral needs to be updated. For central all
@@ -1544,6 +1551,12 @@ void bt_hci_le_enh_conn_complete_sync(struct bt_hci_evt_le_enh_conn_complete_v2 
 	conn->le.phy.tx_phy = sync->phy;
 	conn->le.phy.rx_phy = sync->phy;
 #endif
+
+#if defined(CONFIG_BT_HCI_ACL_PER_CONN_TX_PACKETS)
+	conn->in_ll_max = bt_dev.le.acl_pkts_per_link;
+#else
+	conn->in_ll_max = 3;
+#endif /* CONFIG_BT_HCI_ACL_PER_CONN_TX_PACKETS */
 
 	bt_addr_le_copy(&conn->le.init_addr, &peer_addr);
 
@@ -3078,6 +3091,10 @@ static void read_buffer_size_complete(struct net_buf *buf)
 
 	LOG_DBG("ACL BR/EDR buffers: pkts %u mtu %u", pkts, bt_dev.le.acl_mtu);
 
+#if defined(CONFIG_BT_HCI_ACL_PER_CONN_TX_PACKETS)
+	bt_dev.le.acl_pkts_per_link = pkts / CONFIG_BT_MAX_CONN;
+#endif /* CONFIG_BT_HCI_ACL_PER_CONN_TX_PACKETS */
+
 	k_sem_init(&bt_dev.le.acl_pkts, pkts, pkts);
 }
 #endif /* !defined(CONFIG_BT_CLASSIC) */
@@ -3100,6 +3117,10 @@ static void le_read_buffer_size_complete(struct net_buf *buf)
 
 	LOG_DBG("ACL LE buffers: pkts %u mtu %u", rp->le_max_num, bt_dev.le.acl_mtu);
 
+#if defined(CONFIG_BT_HCI_ACL_PER_CONN_TX_PACKETS)
+	bt_dev.le.acl_pkts_per_link = rp->le_max_num / CONFIG_BT_MAX_CONN;
+#endif /* CONFIG_BT_HCI_ACL_PER_CONN_TX_PACKETS */
+
 	k_sem_init(&bt_dev.le.acl_pkts, rp->le_max_num, rp->le_max_num);
 #endif /* CONFIG_BT_CONN */
 }
@@ -3117,6 +3138,10 @@ static void read_buffer_size_v2_complete(struct net_buf *buf)
 	if (acl_mtu && rp->acl_max_num) {
 		bt_dev.le.acl_mtu = acl_mtu;
 		LOG_DBG("ACL LE buffers: pkts %u mtu %u", rp->acl_max_num, bt_dev.le.acl_mtu);
+
+#if defined(CONFIG_BT_HCI_ACL_PER_CONN_TX_PACKETS)
+		bt_dev.le.acl_pkts_per_link = rp->acl_max_num / CONFIG_BT_MAX_CONN;
+#endif /* CONFIG_BT_HCI_ACL_PER_CONN_TX_PACKETS */
 
 		k_sem_init(&bt_dev.le.acl_pkts, rp->acl_max_num, rp->acl_max_num);
 	}

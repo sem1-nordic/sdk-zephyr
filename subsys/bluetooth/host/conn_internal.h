@@ -314,6 +314,7 @@ struct bt_conn {
 	 * It's an optimization so we don't chase `tx_pending` all the time.
 	 */
 	atomic_t		in_ll;
+	uint8_t 		in_ll_max;
 
 	/* Next buffer should be an ACL/ISO HCI fragment */
 	bool			next_is_frag;

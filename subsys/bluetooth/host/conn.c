@@ -812,6 +812,30 @@ static bool acl_has_data(struct bt_conn *conn)
 }
 #endif	/* defined(CONFIG_BT_CONN) */
 
+static bool cannot_send_to_controller(struct bt_conn *conn)
+{
+	if (k_sem_count_get(bt_conn_get_pkts(conn)) == 0) {
+		return true;
+	}
+
+#ifdef CONFIG_BT_HCI_ACL_PER_CONN_TX_PACKETS
+	if (atomic_get(&conn->in_ll) >= conn->in_ll_max) {
+		/* The goal of this heuristic is to allow the link-layer to
+		 * extend an ACL connection event as long as the application
+		 * layer can provide data.
+		 *
+		 * Here we chose three buffers, as some LLs need two enqueued
+		 * packets to be able to set the more-data bit, and one more
+		 * buffer to allow refilling by the app while one of them is
+		 * being sent over-the-air.
+		 */
+		return true;
+	}
+#endif
+
+	return false;
+}
+
 /* Connection "Scheduler" of sorts:
  *
  * Will try to get the optimal number of queued buffers for the connection.
@@ -837,21 +861,15 @@ static bool should_stop_tx(struct bt_conn *conn)
 		return true;
 	}
 
-	/* Queue only 3 buffers per-conn for now */
-	if (atomic_get(&conn->in_ll) < 3) {
-		/* The goal of this heuristic is to allow the link-layer to
-		 * extend an ACL connection event as long as the application
-		 * layer can provide data.
-		 *
-		 * Here we chose three buffers, as some LLs need two enqueued
-		 * packets to be able to set the more-data bit, and one more
-		 * buffer to allow refilling by the app while one of them is
-		 * being sent over-the-air.
-		 */
-		return false;
+#ifdef CONFIG_BT_HCI_ACL_PER_CONN_TX_PACKETS
+	if (cannot_send_to_controller(conn)) {
+		/* We will get scheduled again when the buffers are freed. */
+		LOG_DBG("no LL bufs for %p", conn);
+		return true;
 	}
+#endif
 
-	return true;
+	return false;
 }
 
 void bt_conn_data_ready(struct bt_conn *conn)
@@ -872,14 +890,6 @@ void bt_conn_data_ready(struct bt_conn *conn)
 	} else {
 		LOG_DBG("already in list");
 	}
-
-	/* Kick the TX processor */
-	bt_tx_irq_raise();
-}
-
-static bool cannot_send_to_controller(struct bt_conn *conn)
-{
-	return k_sem_count_get(bt_conn_get_pkts(conn)) == 0;
 }
 
 static bool dont_have_viewbufs(void)
@@ -935,11 +945,13 @@ struct bt_conn *get_conn_ready(void)
 		return NULL;
 	}
 
+#ifndef CONFIG_BT_HCI_ACL_PER_CONN_TX_PACKETS
 	if (cannot_send_to_controller(conn)) {
 		/* We will get scheduled again when the buffers are freed. */
 		LOG_DBG("no LL bufs for %p", conn);
 		return NULL;
 	}
+#endif
 
 	if (dont_have_tx_context(conn)) {
 		/* We will get scheduled again when TX contexts are available. */
@@ -961,13 +973,20 @@ struct bt_conn *get_conn_ready(void)
 		__ASSERT_NO_MSG(s == node);
 		(void)atomic_set(&conn->_conn_ready_lock, 0);
 
+		// sys_snode_t *next_node  = sys_slist_peek_head(&bt_dev.le.conn_ready);
+		// bool another_conn_ready = (next_node != NULL);
+
 		/* Append connection to list if it still has data */
 		if (conn->has_data(conn)) {
 			LOG_DBG("appending %p to back of TX queue", conn);
 			bt_conn_data_ready(conn);
 		}
 
-		return conn;
+		// if (another_conn_ready) {
+		// 	bt_tx_irq_raise();
+		// }
+
+		return NULL;
 	}
 
 	return bt_conn_ref(conn);
