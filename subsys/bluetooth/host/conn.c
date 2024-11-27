@@ -1188,6 +1188,8 @@ void bt_conn_set_state(struct bt_conn *conn, bt_conn_state_t state)
 		return;
 	}
 
+	k_sched_lock();
+
 	old_state = conn->state;
 	conn->state = state;
 
@@ -1378,6 +1380,8 @@ void bt_conn_set_state(struct bt_conn *conn, bt_conn_state_t state)
 
 		break;
 	}
+
+	k_sched_unlock();
 }
 
 struct bt_conn *bt_conn_lookup_handle(uint16_t handle, enum bt_conn_type type)
